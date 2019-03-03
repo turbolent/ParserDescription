@@ -33,7 +33,7 @@ final class ParserDescriptionTests: XCTestCase {
             )
 
         if #available(OSX 10.13, *) {
-            diffJSON(
+            diffedAssertJSONEqual(
                 """
                 {
                   "type" : "sequence",

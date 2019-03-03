@@ -6,7 +6,7 @@ public enum PatternType: String, Codable {
     case or
     case capture
 
-    public var metatype: Pattern.Type {
+    public var type: Pattern.Type {
         switch self {
         case .token:
             return TokenPattern.self
@@ -27,8 +27,6 @@ public protocol Pattern: Codable {
 
     static var patternType: PatternType { get }
 }
-
-
 
 
 extension Pattern {
@@ -79,7 +77,7 @@ public struct TypedPattern: Codable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
         let type = try container.decode(PatternType.self, forKey: .type)
-        pattern = try type.metatype.init(from: decoder)
+        pattern = try type.type.init(from: decoder)
     }
 
     public func encode(to encoder: Encoder) throws {

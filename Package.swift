@@ -15,21 +15,30 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/turbolent/ParserCombinators.git", .branch("master")),
-        .package(url: "https://github.com/turbolent/DiffedAssertEqual.git", .branch("master")),
+        .package(url: "https://github.com/turbolent/ParserCombinators.git", from: "0.2.0"),
+        .package(url: "https://github.com/turbolent/DiffedAssertEqual.git", from: "0.1.0"),
     ],
     targets: [
         .target(
             name: "ParserDescription",
-            dependencies: []),
-         .target(
+            dependencies: []
+        ),
+        .target(
             name: "ParserDescriptionOperators",
-            dependencies: ["ParserDescription"]),
+            dependencies: ["ParserDescription"]
+        ),
         .target(
             name: "ParserDescriptionCompiler",
-            dependencies: ["ParserDescription", "ParserCombinators"]),
+            dependencies: ["ParserDescription", "ParserCombinators"]
+        ),
         .testTarget(
             name: "ParserDescriptionTests",
-            dependencies: ["ParserDescription", "ParserDescriptionCompiler", "ParserDescriptionOperators", "DiffedAssertEqual"]),
+            dependencies: [
+                "ParserDescription",
+                "ParserDescriptionCompiler",
+                "ParserDescriptionOperators",
+                "DiffedAssertEqual"
+            ]
+        ),
     ]
 )

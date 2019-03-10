@@ -12,6 +12,11 @@ extension String: Token {
             && self == conditionInput
     }
 
+    public func doesTokenLabel(_ label: String, havePrefix prefix: String) -> Bool {
+        return label == "text"
+            && self.starts(with: prefix)
+    }
+
     public func isTokenLabel(
         _ label: String,
         matchingRegularExpression: NSRegularExpression
@@ -25,11 +30,11 @@ final class ParserDescriptionTests: XCTestCase {
     func testCoding() throws {
         let tokenPattern =
             TokenPattern(condition:
-                LabelCondition(label: "text", op: .equalTo, input: "foo")
-                    || LabelCondition(label: "text", op: .equalTo, input: "bar")
+                LabelCondition(label: "text", op: .isEqualTo, input: "foo")
+                    || LabelCondition(label: "text", op: .isEqualTo, input: "bar")
             )
             ~ TokenPattern(condition:
-                LabelCondition(label: "text", op: .equalTo, input: "baz")
+                LabelCondition(label: "text", op: .isEqualTo, input: "baz")
             )
 
         if #available(OSX 10.13, *) {
@@ -79,8 +84,8 @@ final class ParserDescriptionTests: XCTestCase {
 
     func testCompilation() throws {
         let tokenPattern = TokenPattern(condition:
-            LabelCondition(label: "text", op: .equalTo, input: "foo")
-                || LabelCondition(label: "text", op: .equalTo, input: "bar")
+            LabelCondition(label: "text", op: .isEqualTo, input: "foo")
+                || LabelCondition(label: "text", op: .isEqualTo, input: "bar")
         )
         let pattern = tokenPattern.capture("token").rep(min: 1)
 

@@ -20,6 +20,11 @@ public protocol Token {
         equalTo conditionInput: String
     ) -> Bool
 
+    func doesTokenLabel(
+        _ label: String,
+        havePrefix conditionInput: String
+    ) -> Bool
+
     func isTokenLabel(
         _ label: String,
         matchingRegularExpression regularExpression: NSRegularExpression
@@ -131,11 +136,11 @@ public struct PatternCompiler<Token> where Token: ParserDescriptionCompiler.Toke
 
     public func compile(condition: LabelCondition) throws -> (Token) -> Bool {
         switch condition.op {
-        case .equalTo:
+        case .isEqualTo:
             return {
                 $0.isTokenLabel(condition.label, equalTo: condition.input)
             }
-        case .notEqualTo:
+        case .isNotEqualTo:
             return {
                 !$0.isTokenLabel(condition.label, equalTo: condition.input)
             }
@@ -143,6 +148,10 @@ public struct PatternCompiler<Token> where Token: ParserDescriptionCompiler.Toke
             let expression = try NSRegularExpression(pattern: condition.input, options: [])
             return {
                 $0.isTokenLabel(condition.label, matchingRegularExpression: expression)
+            }
+        case .hasPrefix:
+            return {
+                $0.doesTokenLabel(condition.label, havePrefix: condition.input)
             }
         }
     }

@@ -1,6 +1,7 @@
 
 public enum Operation: String, Codable {
-    case equalTo = "="
-    case notEqualTo = "!="
-    case matchesRegularExpression = "re"
+    case isEqualTo = "="
+    case isNotEqualTo = "!="
+    case hasPrefix = "prefix"
+    case matchesRegularExpression = "regex"
 }

@@ -55,8 +55,20 @@ extension Pattern {
         return CapturePattern(pattern: self, name: name)
     }
 
-    public func rep(min: Int? = nil, max: Int? = nil) -> RepetitionPattern {
+    public func rep(min: Int, max: Int? = nil) -> RepetitionPattern {
         return RepetitionPattern(pattern: self, min: min, max: max)
+    }
+
+    public func opt() -> RepetitionPattern {
+        return rep(min: 0, max: 1)
+    }
+
+    public func zeroOrMore() -> RepetitionPattern {
+        return rep(min: 0)
+    }
+
+    public func oneOrMore() -> RepetitionPattern {
+        return rep(min: 1)
     }
 }
 
@@ -206,7 +218,7 @@ public struct RepetitionPattern: Pattern {
     public static let patternType: PatternType = .repetition
 
     public let pattern: Pattern
-    public let min: Int?
+    public let min: Int
     public let max: Int?
 
     private enum CodingKeys: CodingKey {
@@ -215,7 +227,7 @@ public struct RepetitionPattern: Pattern {
         case max
     }
 
-    public init(pattern: Pattern, min: Int?, max: Int?) {
+    public init(pattern: Pattern, min: Int, max: Int?) {
         self.pattern = pattern
         self.min = min
         self.max = max
@@ -224,14 +236,14 @@ public struct RepetitionPattern: Pattern {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         pattern = try container.decode(TypedPattern.self, forKey: .pattern).pattern
-        min = try container.decodeIfPresent(Int.self, forKey: .min)
+        min = try container.decode(Int.self, forKey: .min)
         max = try container.decodeIfPresent(Int.self, forKey: .max)
     }
 
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(TypedPattern(pattern), forKey: .pattern)
-        try container.encodeIfPresent(min, forKey: .min)
+        try container.encode(min, forKey: .min)
         try container.encodeIfPresent(max, forKey: .max)
     }
 }

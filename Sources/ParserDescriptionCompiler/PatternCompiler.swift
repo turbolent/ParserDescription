@@ -34,13 +34,13 @@ public protocol Token {
 public struct PatternCompiler<Token> where Token: ParserDescriptionCompiler.Token  {
 
     public enum Error: Swift.Error {
-        case unsupportedPattern(Pattern)
-        case unsupportedCondition(Condition)
+        case unsupportedPattern(_Pattern)
+        case unsupportedCondition(_Condition)
     }
 
     public init() {}
 
-    public func compile(pattern: Pattern) throws -> Parser<Captures, Token> {
+    public func compile(pattern: _Pattern) throws -> Parser<Captures, Token> {
         switch pattern {
         case let pattern as SequencePattern:
             return try compile(pattern: pattern)
@@ -52,6 +52,8 @@ public struct PatternCompiler<Token> where Token: ParserDescriptionCompiler.Toke
             return try compile(pattern: pattern)
         case let pattern as TokenPattern:
             return try compile(pattern: pattern)
+        case let pattern as AnyPattern:
+            return try compile(pattern: pattern.pattern)
         default:
             throw Error.unsupportedPattern(pattern)
         }
@@ -71,7 +73,7 @@ public struct PatternCompiler<Token> where Token: ParserDescriptionCompiler.Toke
 
     public func compile(pattern: RepetitionPattern) throws -> Parser<Captures, Token> {
         return try compile(pattern: pattern.pattern)
-            .rep(min: pattern.min ?? 0,
+            .rep(min: pattern.min,
                  max: pattern.max)
     }
 
@@ -93,7 +95,7 @@ public struct PatternCompiler<Token> where Token: ParserDescriptionCompiler.Toke
             .captured()
     }
 
-    public func compile(condition: Condition) throws -> (Token) -> Bool {
+    public func compile(condition: _Condition) throws -> (Token) -> Bool {
         switch condition {
         case let condition as AndCondition:
             return try compile(condition: condition)
@@ -103,6 +105,8 @@ public struct PatternCompiler<Token> where Token: ParserDescriptionCompiler.Toke
             return try compile(condition: condition)
         case let condition as LabelCondition:
             return try compile(condition: condition)
+        case let condition as AnyCondition:
+            return try compile(condition: condition.condition)
         default:
             throw Error.unsupportedCondition(condition)
         }
@@ -153,6 +157,17 @@ public struct PatternCompiler<Token> where Token: ParserDescriptionCompiler.Toke
             return {
                 $0.doesTokenLabel(condition.label, havePrefix: condition.input)
             }
+        }
+    }
+}
+
+extension PatternCompiler.Error: LocalizedError {
+    public var errorDescription: String? {
+        switch self {
+        case let .unsupportedCondition(condition):
+            return "Unsupported condition: \(condition)"
+        case let .unsupportedPattern(pattern):
+            return "Unsupported pattern: \(pattern)"
         }
     }
 }

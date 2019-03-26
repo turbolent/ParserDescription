@@ -4,163 +4,203 @@ public enum ConditionType: String, Codable {
     case and
     case or
     case not
-
-    public var metatype: Condition.Type {
-        switch self {
-        case .label:
-            return LabelCondition.self
-        case .and:
-            return AndCondition.self
-        case .or:
-            return OrCondition.self
-        case .not:
-            return NotCondition.self
-        }
-    }
 }
 
+public protocol _Condition: Codable {
+    var type: ConditionType { get }
+}
 
-public protocol Condition: Codable {
+public protocol Condition: _Condition, Hashable {}
 
-    static var conditionType: ConditionType { get }
+
+public indirect enum AnyCondition: Condition {
+
+    public var type: ConditionType {
+        return condition.type
+    }
+
+    case label(LabelCondition)
+    case and(AndCondition)
+    case or(OrCondition)
+    case not(NotCondition)
+
+    public var condition: _Condition {
+        switch self {
+        case let .label(condition):
+            return condition
+        case let .and(condition):
+            return condition
+        case let .or(condition):
+            return condition
+        case let .not(condition):
+            return condition
+        }
+    }
+
+    private enum CodingKeys: CodingKey {
+        case type
+    }
+
+    public init<T: Condition>(_ condition: T) {
+        switch condition {
+        case let labelCondition as LabelCondition:
+            self = .label(labelCondition)
+        case let andCondition as AndCondition:
+            self = .and(andCondition)
+        case let orCondition as OrCondition:
+            self = .or(orCondition)
+        case let notCondition as NotCondition:
+            self = .not(notCondition)
+        case let anyCondition as AnyCondition:
+            self = anyCondition
+        default:
+            fatalError("unsupported condition: \(condition)")
+        }
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let type = try container.decode(ConditionType.self, forKey: .type)
+        switch type {
+        case .label:
+            self = .label(try LabelCondition(from: decoder))
+        case .and:
+            self = .and(try AndCondition(from: decoder))
+        case .or:
+            self = .or(try OrCondition(from: decoder))
+        case .not:
+            self = .not(try NotCondition(from: decoder))
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        let condition = self.condition
+        try container.encode(condition.type, forKey: .type)
+        try condition.encode(to: encoder)
+    }
 }
 
 
 extension Condition {
 
-    public func or(_ other: Condition) -> OrCondition {
+    public func or<T: Condition>(_ other: T) -> OrCondition {
         if let or = self as? OrCondition {
             var conditions = or.conditions
-            conditions.append(other)
+            conditions.append(AnyCondition(other))
             return OrCondition(conditions: conditions)
         } else {
-            return OrCondition(conditions: [self, other])
+            return OrCondition(conditions: [
+                AnyCondition(self),
+                AnyCondition(other)
+            ])
         }
     }
 
-    public func and(_ other: Condition) -> AndCondition {
+    public func and<T: Condition>(_ other: T) -> AndCondition {
         if let seq = self as? AndCondition {
             var conditions = seq.conditions
-            conditions.append(other)
+            conditions.append(AnyCondition(other))
             return AndCondition(conditions: conditions)
         } else {
-            return AndCondition(conditions: [self, other])
+            return AndCondition(conditions: [
+                AnyCondition(self),
+                AnyCondition(other)
+            ])
         }
-    }
-}
-
-
-public struct TypedCondition: Codable {
-
-    private enum CodingKeys: String, CodingKey {
-        case type
-    }
-
-    public let condition: Condition
-
-    public init(_ condition: Condition) {
-        self.condition = condition
-    }
-
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-
-        let type = try container.decode(ConditionType.self, forKey: .type)
-        condition = try type.metatype.init(from: decoder)
-    }
-
-    public func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-
-        try container.encode(type(of: condition).conditionType, forKey: .type)
-        try condition.encode(to: encoder)
     }
 }
 
 
 public struct AndCondition: Condition {
 
-    public static let conditionType: ConditionType = .and
+    public var type: ConditionType {
+        return .and
+    }
 
-    public let conditions: [Condition]
+    public let conditions: [AnyCondition]
 
     private enum CodingKeys: CodingKey {
         case conditions
     }
 
-    public init(conditions: [Condition]) {
+    public init(conditions: [AnyCondition]) {
         self.conditions = conditions
     }
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        conditions = try container.decode([TypedCondition].self, forKey: .conditions)
-            .map { $0.condition }
+        conditions = try container.decode([AnyCondition].self, forKey: .conditions)
     }
 
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(conditions.map(TypedCondition.init), forKey: .conditions)
+        try container.encode(conditions, forKey: .conditions)
     }
 }
 
 
 public struct OrCondition: Condition {
 
-    public static let conditionType: ConditionType = .or
+    public var type: ConditionType {
+        return .or
+    }
 
-    public let conditions: [Condition]
+    public let conditions: [AnyCondition]
 
     private enum CodingKeys: CodingKey {
         case conditions
     }
 
-    public init(conditions: [Condition]) {
+    public init(conditions: [AnyCondition]) {
         self.conditions = conditions
     }
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        conditions = try container.decode([TypedCondition].self, forKey: .conditions)
-            .map { $0.condition }
+        conditions = try container.decode([AnyCondition].self, forKey: .conditions)
     }
 
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(conditions.map(TypedCondition.init), forKey: .conditions)
+        try container.encode(conditions, forKey: .conditions)
     }
 }
 
 
 public struct NotCondition: Condition {
 
-    public static let conditionType: ConditionType = .not
+    public var type: ConditionType {
+        return .not
+    }
 
-    public let condition: Condition
+    public let condition: AnyCondition
 
     private enum CodingKeys: CodingKey {
         case condition
     }
 
-    public init(condition: Condition) {
+    public init(condition: AnyCondition) {
         self.condition = condition
     }
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        condition = try container.decode(TypedCondition.self, forKey: .condition).condition
+        condition = try container.decode(AnyCondition.self, forKey: .condition)
     }
 
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(TypedCondition(condition), forKey: .condition)
+        try container.encode(condition, forKey: .condition)
     }
 }
 
 
 public struct LabelCondition: Condition {
 
-    public static let conditionType: ConditionType = .label
+    public var type: ConditionType {
+        return .label
+    }
 
     public let label: String
     public let op: Operation

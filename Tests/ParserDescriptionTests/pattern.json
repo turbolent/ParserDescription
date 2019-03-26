@@ -1,0 +1,34 @@
+{
+  "type" : "sequence",
+  "patterns" : [
+    {
+      "type" : "token",
+      "condition" : {
+        "type" : "or",
+        "conditions" : [
+          {
+            "label" : "text",
+            "op" : "=",
+            "input" : "foo",
+            "type" : "label"
+          },
+          {
+            "label" : "text",
+            "op" : "=",
+            "input" : "bar",
+            "type" : "label"
+          }
+        ]
+      }
+    },
+    {
+      "type" : "token",
+      "condition" : {
+        "label" : "text",
+        "op" : "=",
+        "input" : "baz",
+        "type" : "label"
+      }
+    }
+  ]
+}

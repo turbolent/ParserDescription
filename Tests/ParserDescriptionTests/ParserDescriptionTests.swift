@@ -25,7 +25,18 @@ extension String: Token {
     }
 }
 
+@available(OSX 10.13, *)
 final class ParserDescriptionTests: XCTestCase {
+
+    static let fileURL = URL(fileURLWithPath: #file)
+
+    private func loadFixture(path: String) throws -> Data {
+        let url = URL(
+            fileURLWithPath: path,
+            relativeTo: ParserDescriptionTests.fileURL
+        )
+        return try Data(contentsOf: url)
+    }
 
     func testCoding() throws {
         let tokenPattern =
@@ -35,51 +46,12 @@ final class ParserDescriptionTests: XCTestCase {
             )
             ~ TokenPattern(condition:
                 LabelCondition(label: "text", op: .isEqualTo, input: "baz")
-            )
+        )
 
-        if #available(OSX 10.13, *) {
-            diffedAssertJSONEqual(
-                """
-                {
-                  "type" : "sequence",
-                  "patterns" : [
-                    {
-                      "type" : "token",
-                      "condition" : {
-                        "type" : "or",
-                        "conditions" : [
-                          {
-                            "label" : "text",
-                            "op" : "=",
-                            "input" : "foo",
-                            "type" : "label"
-                          },
-                          {
-                            "label" : "text",
-                            "op" : "=",
-                            "input" : "bar",
-                            "type" : "label"
-                          }
-                        ]
-                      }
-                    },
-                    {
-                      "type" : "token",
-                      "condition" : {
-                        "label" : "text",
-                        "op" : "=",
-                        "input" : "baz",
-                        "type" : "label"
-                      }
-                    }
-                  ]
-                }
-                """,
-                TypedPattern(tokenPattern)
-            )
-        } else {
-            // TODO
-        }
+        diffedAssertJSONEqual(
+            String(data: try loadFixture(path: "pattern.json"), encoding: .utf8)!,
+            AnyPattern(tokenPattern)
+        )
     }
 
     func testCompilation() throws {

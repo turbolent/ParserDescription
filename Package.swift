@@ -13,6 +13,10 @@ let package = Package(
             name: "ParserDescriptionOperators",
             targets: ["ParserDescriptionOperators"]
         ),
+        .library(
+            name: "ParserDescriptionCompiler",
+            targets: ["ParserDescriptionCompiler"]
+        ),
     ],
     dependencies: [
         .package(url: "https://github.com/turbolent/ParserCombinators.git", from: "0.3.0"),

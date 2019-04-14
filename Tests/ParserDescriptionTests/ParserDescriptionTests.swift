@@ -1,9 +1,8 @@
 import XCTest
 import ParserDescription
 import ParserDescriptionOperators
-import ParserDescriptionCompiler
-import ParserCombinators
 import DiffedAssertEqual
+
 
 extension String: Token {
 
@@ -24,6 +23,7 @@ extension String: Token {
         return false
     }
 }
+
 
 @available(OSX 10.13, *)
 final class ParserDescriptionTests: XCTestCase {
@@ -55,27 +55,14 @@ final class ParserDescriptionTests: XCTestCase {
     }
 
     func testCompilation() throws {
-        let tokenPattern = TokenPattern(condition:
+        let condition =
             LabelCondition(label: "text", op: .isEqualTo, input: "foo")
                 || LabelCondition(label: "text", op: .isEqualTo, input: "bar")
-        )
-        let pattern = tokenPattern.capture("token").rep(min: 1)
 
-        let compiler = PatternCompiler<String>()
-        let parser: Parser<Captures, String> = try compiler.compile(pattern: pattern)
+        let predicate = try condition.compile()
 
-        let reader = CollectionReader(collection: ["foo", "foo", "bar", "baz"])
-
-        guard case .success(let captures, _) = parser.parse(reader) else {
-            XCTFail("parsing should succeed")
-            return
-        }
-
-        XCTAssertEqual(String(describing: captures.values),
-                       String(describing: ["foo", "foo", "bar"]))
-        XCTAssertEqual(String(describing: captures.entries.sorted { $0.key < $1.key }),
-                       String(describing: [
-                        (key: "token", value: [["foo"], ["foo"], ["bar"]])
-                    ]))
+        XCTAssertTrue(predicate("foo"))
+        XCTAssertTrue(predicate("bar"))
+        XCTAssertFalse(predicate("baz"))
     }
 }
